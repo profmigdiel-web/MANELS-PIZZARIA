@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manel's Pizzaria — Painel do Vendedor</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+/* ============================================================
+   ⚙️  CONFIGURAÇÃO — cole aqui as suas chaves do Supabase
+   Settings → API → Project URL / anon public key
+   ============================================================ */
+</style>
+</head>
+<body>
+<script>
+  // >>>>>>>>>>>>>>>>>>>>>> COLE SUAS CHAVES AQUI <<<<<<<<<<<<<<<<<<<<<<
+  const SUPABASE_URL = "https://qhdxiojewiveazfozpix.supabase.co/rest/v1/";
+  const SUPABASE_ANON_KEY = "sb_publishable_L1y8x8k6tBMvi3-CfENYnw_qqxTFS-S";
+  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+</script>
+<style>
+  :root{
+    --forest:#2f4a3c; --forest-dark:#1f332a; --cream:#f2e5d3; --paper:#fffaf2;
+    --rust:#c96f3a; --rust-dark:#a24f22; --ink:#2b2621; --ink-soft:#6b625a; --line:#e2d5c0;
+    --danger:#b3392b; --ok:#2f7a4a;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--cream); color:var(--ink); font-family:'Work Sans',sans-serif; min-height:100vh; padding-bottom:60px;}
+  h1,h2,h3{font-family:'Fraunces',serif; color:var(--forest-dark);}
+  .wrap{max-width:720px; margin:0 auto; padding:1.2rem 1rem;}
+  .topbar{background:var(--forest); color:#fff; padding:1rem; display:flex; justify-content:space-between; align-items:center;}
+  .topbar h1{color:#fff; font-size:19px;}
+  .topbar button{background:rgba(255,255,255,.15); color:#fff; border:none; padding:.5rem .9rem; border-radius:8px; font-size:13px; cursor:pointer;}
+
+  /* LOGIN */
+  #login-screen{display:flex; align-items:center; justify-content:center; min-height:100vh; padding:1rem;}
+  .login-card{background:var(--paper); border-radius:14px; padding:2rem 1.6rem; max-width:360px; width:100%; box-shadow:0 8px 30px rgba(0,0,0,.08);}
+  .login-card h1{font-size:22px; margin-bottom:.3rem; text-align:center;}
+  .login-card p{color:var(--ink-soft); font-size:13.5px; text-align:center; margin-bottom:1.4rem;}
+  label{font-size:12.5px; font-weight:700; color:var(--rust-dark); text-transform:uppercase; letter-spacing:.03em; display:block; margin:.8rem 0 .3rem;}
+  input, select, textarea{width:100%; padding:.65rem .8rem; border:1.5px solid var(--line); border-radius:8px; background:#fff; font-size:14.5px; font-family:inherit; color:var(--ink);}
+  input:focus, select:focus, textarea:focus{outline:none; border-color:var(--forest);}
+  textarea{min-height:70px; resize:vertical;}
+  .btn{display:block; width:100%; padding:.8rem; border:none; border-radius:10px; font-weight:700; font-size:14.5px; cursor:pointer; margin-top:1.2rem;}
+  .btn-primary{background:var(--forest); color:#fff;}
+  .btn-danger{background:var(--danger); color:#fff;}
+  .btn-secondary{background:#fff; color:var(--ink); border:1.5px solid var(--line);}
+  .error-msg{background:#fbe4e0; color:var(--danger); padding:.6rem .8rem; border-radius:8px; font-size:13px; margin-top:.8rem; display:none;}
+  .ok-msg{background:#e2f0e6; color:var(--ok); padding:.6rem .8rem; border-radius:8px; font-size:13px; margin-top:.8rem; display:none;}
+
+  /* APP */
+  #app-screen{display:none;}
+  .config-banner{background:#fbe4e0; color:var(--danger); padding:.8rem 1rem; font-size:13px; text-align:center; display:none;}
+  .tabs{display:flex; gap:.4rem; overflow-x:auto; padding:1rem 1rem 0; -webkit-overflow-scrolling:touch;}
+  .tab-btn{flex:0 0 auto; padding:.55rem 1rem; border-radius:20px; border:1.5px solid var(--line); background:#fff; font-size:13px; font-weight:600; cursor:pointer; color:var(--ink-soft); white-space:nowrap;}
+  .tab-btn.active{background:var(--forest); border-color:var(--forest); color:#fff;}
+
+  .add-new-btn{background:var(--rust); color:#fff; border:none; padding:.75rem 1rem; border-radius:10px; font-weight:700; font-size:14px; width:100%; margin:1rem 0 .3rem; cursor:pointer;}
+
+  .product-card{background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:.9rem 1rem; margin-bottom:.7rem; display:flex; gap:.8rem;}
+  .product-card.inactive{opacity:.5;}
+  .product-card img{width:64px; height:64px; object-fit:cover; border-radius:8px; flex-shrink:0; background:#eee;}
+  .product-card .no-img{width:64px; height:64px; border-radius:8px; flex-shrink:0; background:#eee; display:flex; align-items:center; justify-content:center; font-size:10px; color:#999; text-align:center;}
+  .product-info{flex:1; min-width:0;}
+  .product-info .pname{font-family:'Fraunces',serif; font-weight:700; font-size:15px; color:var(--ink);}
+  .product-info .pdesc{font-size:12px; color:var(--ink-soft); margin:.15rem 0 .35rem; line-height:1.3;}
+  .product-info .pprice{font-size:13px; color:var(--forest-dark); font-weight:600;}
+  .promo-tag{display:inline-block; background:var(--rust); color:#fff; font-size:10.5px; font-weight:700; padding:.15rem .5rem; border-radius:5px; margin-left:.4rem;}
+  .product-actions{display:flex; flex-direction:column; gap:.4rem;}
+  .icon-btn{background:#fff; border:1.5px solid var(--line); border-radius:7px; padding:.4rem .55rem; font-size:12px; cursor:pointer;}
+
+  /* MODAL / FORM */
+  .modal-overlay{display:none; position:fixed; inset:0; background:rgba(20,15,10,.5); z-index:50; align-items:flex-start; justify-content:center; overflow-y:auto; padding:1.2rem .8rem;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--paper); border-radius:14px; max-width:480px; width:100%; padding:1.3rem 1.2rem; margin-top:1rem;}
+  .modal h2{font-size:18px; margin-bottom:.9rem;}
+  .field-row{display:flex; gap:.6rem;}
+  .field-row > div{flex:1;}
+  .toggle-row{display:flex; align-items:center; gap:.6rem; margin:.9rem 0; background:rgba(201,154,74,.14); border:1px solid rgba(201,154,74,.4); border-radius:8px; padding:.6rem .8rem;}
+  .toggle-row input{width:18px; height:18px; accent-color:var(--rust);}
+  .toggle-row span{font-size:13px;}
+  .img-preview{width:100%; height:140px; object-fit:cover; border-radius:8px; margin-top:.5rem; background:#eee; display:none;}
+  .modal-btns{display:flex; gap:.6rem; margin-top:1.2rem;}
+  .modal-btns .btn{margin-top:0;}
+  .price-block{border:1px dashed var(--line); border-radius:8px; padding:.7rem; margin-top:.4rem;}
+  .price-block .field-label{font-size:11px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; margin-bottom:.3rem; display:block;}
+  .spinner{display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; vertical-align:-2px; margin-right:.4rem;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .empty-state{text-align:center; padding:2.5rem 1rem; color:var(--ink-soft); font-size:14px;}
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>🍕 Painel do Vendedor</h1>
+    <p>Manel's Pizzaria Delivery — acesso restrito</p>
+    <label>E-mail</label>
+    <input type="email" id="login-email" autocomplete="username" placeholder="seuemail@exemplo.com">
+    <label>Senha</label>
+    <input type="password" id="login-password" autocomplete="current-password" placeholder="••••••••">
+    <button class="btn btn-primary" onclick="doLogin()" id="login-btn">Entrar</button>
+    <div class="error-msg" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app-screen">
+  <div class="topbar">
+    <h1>🍕 Painel do Vendedor</h1>
+    <button onclick="doLogout()">Sair</button>
+  </div>
+  <div class="config-banner" id="config-banner">⚠️ Configure as chaves do Supabase no topo deste arquivo.</div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="wrap">
+    <button class="add-new-btn" onclick="openProductModal(null)">+ Adicionar novo produto</button>
+    <div id="product-list"></div>
+  </div>
+</div>
+
+<!-- ===================== MODAL PRODUTO ===================== -->
+<div class="modal-overlay" id="product-modal">
+  <div class="modal">
+    <h2 id="modal-title">Novo produto</h2>
+
+    <label>Categoria</label>
+    <select id="f-category" onchange="renderPriceFields()">
+      <option value="pizza">Pizza</option>
+      <option value="calzone">Calzone</option>
+      <option value="brotinho">Brotinho</option>
+      <option value="esfiha">Esfiha</option>
+      <option value="bebida">Bebida</option>
+      <option value="combo">Combo</option>
+    </select>
+
+    <label>Nome do produto</label>
+    <input type="text" id="f-name" placeholder="Ex: Calabresa com Mussarela">
+
+    <label>Descrição (ingredientes, ou o que vem no combo)</label>
+    <textarea id="f-description" placeholder="Ex: Calabresa, mussarela, cebola e orégano"></textarea>
+
+    <label>Foto do produto</label>
+    <input type="file" id="f-image-file" accept="image/*" onchange="previewImage(event)">
+    <img id="f-image-preview" class="img-preview">
+    <input type="hidden" id="f-image-url">
+
+    <div id="price-fields"></div>
+
+    <div class="toggle-row">
+      <input type="checkbox" id="f-promo-active" onchange="togglePromoFields()">
+      <span>Este produto está em <b>promoção</b></span>
+    </div>
+    <div id="promo-fields" style="display:none;">
+      <label>Texto da promoção</label>
+      <input type="text" id="f-promo-label" placeholder="Ex: Promoção da Semana">
+      <div id="promo-price-fields"></div>
+    </div>
+
+    <div class="toggle-row">
+      <input type="checkbox" id="f-active" checked>
+      <span>Produto <b>visível</b> no cardápio</span>
+    </div>
+
+    <div class="error-msg" id="modal-error"></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeProductModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveProduct()" id="save-btn">Salvar</button>
+    </div>
+    <button class="btn btn-danger" id="delete-btn" onclick="deleteProduct()" style="display:none;">Excluir produto</button>
+  </div>
+</div>
+
+<script>
+/* ==================== SUPABASE INIT ==================== */
+let supabase = null;
+const keysConfigured = SUPABASE_URL !== "COLE_AQUI_A_SUA_PROJECT_URL" && SUPABASE_ANON_KEY !== "COLE_AQUI_A_SUA_ANON_PUBLIC_KEY";
+if(keysConfigured){
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} else {
+  document.getElementById('config-banner').style.display = 'block';
+}
+
+const CATEGORIES = [
+  {key:'pizza', label:'Pizzas'},
+  {key:'calzone', label:'Calzones'},
+  {key:'brotinho', label:'Brotinho'},
+  {key:'esfiha', label:'Esfihas'},
+  {key:'bebida', label:'Bebidas'},
+  {key:'combo', label:'Combos'}
+];
+let currentTab = 'pizza';
+let allProducts = [];
+let editingId = null;
+
+/* ==================== LOGIN ==================== */
+async function doLogin(){
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+
+  if(!keysConfigured){
+    errEl.textContent = 'Configure as chaves do Supabase no arquivo antes de fazer login.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(!email || !password){
+    errEl.textContent = 'Preencha e-mail e senha.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Entrando...';
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  btn.disabled = false; btn.textContent = 'Entrar';
+
+  if(error){
+    errEl.textContent = 'E-mail ou senha incorretos.';
+    errEl.style.display = 'block';
+    return;
+  }
+  showApp();
+}
+
+async function doLogout(){
+  if(supabase) await supabase.auth.signOut();
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+async function checkSession(){
+  if(!keysConfigured) return;
+  const { data } = await supabase.auth.getSession();
+  if(data.session){ showApp(); }
+}
+
+function showApp(){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  renderTabs();
+  loadProducts();
+}
+
+/* ==================== TABS ==================== */
+function renderTabs(){
+  const el = document.getElementById('tabs');
+  el.innerHTML = CATEGORIES.map(c => `<button class="tab-btn${c.key===currentTab?' active':''}" onclick="switchTab('${c.key}')">${c.label}</button>`).join('');
+}
+function switchTab(key){
+  currentTab = key;
+  renderTabs();
+  renderProductList();
+}
+
+/* ==================== LOAD / RENDER PRODUCTS ==================== */
+async function loadProducts(){
+  const { data, error } = await supabase.from('products').select('*').order('category').order('sort_order');
+  if(error){
+    document.getElementById('product-list').innerHTML = `<div class="empty-state">Erro ao carregar produtos: ${error.message}</div>`;
+    return;
+  }
+  allProducts = data || [];
+  renderProductList();
+}
+
+function fmtPrice(v){ return 'R$ ' + Number(v).toFixed(2).replace('.', ','); }
+
+function priceSummary(prices){
+  if(!prices) return '';
+  if(prices.unico !== undefined) return fmtPrice(prices.unico);
+  return Object.keys(prices).map(k => `${k}: ${fmtPrice(prices[k])}`).join(' · ');
+}
+
+function renderProductList(){
+  const list = allProducts.filter(p => p.category === currentTab);
+  const el = document.getElementById('product-list');
+  if(list.length === 0){
+    el.innerHTML = `<div class="empty-state">Nenhum produto nesta categoria ainda.<br>Toque em "+ Adicionar novo produto" para criar o primeiro.</div>`;
+    return;
+  }
+  el.innerHTML = list.map(p => `
+    <div class="product-card${p.active ? '' : ' inactive'}">
+      ${p.image_url ? `<img src="${p.image_url}" alt="${p.name}">` : `<div class="no-img">sem foto</div>`}
+      <div class="product-info">
+        <div class="pname">${p.name}${p.promo_active ? `<span class="promo-tag">PROMOÇÃO</span>` : ''}</div>
+        ${p.description ? `<div class="pdesc">${p.description}</div>` : ''}
+        <div class="pprice">${priceSummary(p.prices)}</div>
+        ${!p.active ? `<div style="font-size:11px;color:var(--danger);margin-top:.2rem;">Oculto do cardápio</div>` : ''}
+      </div>
+      <div class="product-actions">
+        <button class="icon-btn" onclick="openProductModal('${p.id}')">Editar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ==================== MODAL ==================== */
+function renderPriceFields(prices){
+  prices = prices || {};
+  const cat = document.getElementById('f-category').value;
+  const el = document.getElementById('price-fields');
+  if(cat === 'pizza'){
+    el.innerHTML = `
+      <div class="price-block">
+        <span class="field-label">Preços por tamanho</span>
+        <div class="field-row">
+          <div><label style="margin-top:0;">M (30cm)</label><input type="number" step="0.01" id="price-M" value="${prices.M ?? ''}"></div>
+          <div><label style="margin-top:0;">G (35cm)</label><input type="number" step="0.01" id="price-G" value="${prices.G ?? ''}"></div>
+          <div><label style="margin-top:0;">GG (40cm)</label><input type="number" step="0.01" id="price-GG" value="${prices.GG ?? ''}"></div>
+        </div>
+      </div>`;
+  } else {
+    el.innerHTML = `
+      <label>Preço (R$)</label>
+      <input type="number" step="0.01" id="price-unico" value="${prices.unico ?? ''}">`;
+  }
+}
+
+function renderPromoPriceFields(promoPrices){
+  promoPrices = promoPrices || {};
+  const cat = document.getElementById('f-category').value;
+  const el = document.getElementById('promo-price-fields');
+  if(cat === 'pizza'){
+    el.innerHTML = `
+      <div class="price-block">
+        <span class="field-label">Preços promocionais por tamanho</span>
+        <div class="field-row">
+          <div><label style="margin-top:0;">M</label><input type="number" step="0.01" id="promo-price-M" value="${promoPrices.M ?? ''}"></div>
+          <div><label style="margin-top:0;">G</label><input type="number" step="0.01" id="promo-price-G" value="${promoPrices.G ?? ''}"></div>
+          <div><label style="margin-top:0;">GG</label><input type="number" step="0.01" id="promo-price-GG" value="${promoPrices.GG ?? ''}"></div>
+        </div>
+      </div>`;
+  } else {
+    el.innerHTML = `
+      <label>Preço promocional (R$)</label>
+      <input type="number" step="0.01" id="promo-price-unico" value="${promoPrices.unico ?? ''}">`;
+  }
+}
+
+function togglePromoFields(){
+  const active = document.getElementById('f-promo-active').checked;
+  document.getElementById('promo-fields').style.display = active ? 'block' : 'none';
+  if(active) renderPromoPriceFields();
+}
+
+function previewImage(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = document.getElementById('f-image-preview');
+    img.src = ev.target.result;
+    img.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function openProductModal(id){
+  editingId = id;
+  document.getElementById('modal-error').style.display = 'none';
+  document.getElementById('f-image-file').value = '';
+  const deleteBtn = document.getElementById('delete-btn');
+
+  if(id){
+    const p = allProducts.find(x => x.id === id);
+    document.getElementById('modal-title').textContent = 'Editar produto';
+    document.getElementById('f-category').value = p.category;
+    document.getElementById('f-name').value = p.name;
+    document.getElementById('f-description').value = p.description || '';
+    document.getElementById('f-image-url').value = p.image_url || '';
+    const preview = document.getElementById('f-image-preview');
+    if(p.image_url){ preview.src = p.image_url; preview.style.display = 'block'; } else { preview.style.display = 'none'; }
+    renderPriceFields(p.prices);
+    document.getElementById('f-promo-active').checked = !!p.promo_active;
+    document.getElementById('f-promo-label').value = p.promo_label || '';
+    document.getElementById('promo-fields').style.display = p.promo_active ? 'block' : 'none';
+    renderPromoPriceFields(p.promo_prices);
+    document.getElementById('f-active').checked = p.active !== false;
+    deleteBtn.style.display = 'block';
+  } else {
+    document.getElementById('modal-title').textContent = 'Novo produto';
+    document.getElementById('f-category').value = currentTab;
+    document.getElementById('f-name').value = '';
+    document.getElementById('f-description').value = '';
+    document.getElementById('f-image-url').value = '';
+    document.getElementById('f-image-preview').style.display = 'none';
+    renderPriceFields();
+    document.getElementById('f-promo-active').checked = false;
+    document.getElementById('f-promo-label').value = '';
+    document.getElementById('promo-fields').style.display = 'none';
+    document.getElementById('f-active').checked = true;
+    deleteBtn.style.display = 'none';
+  }
+  document.getElementById('product-modal').classList.add('open');
+}
+
+function closeProductModal(){
+  document.getElementById('product-modal').classList.remove('open');
+  editingId = null;
+}
+
+function collectPrices(prefix){
+  const cat = document.getElementById('f-category').value;
+  if(cat === 'pizza'){
+    const M = parseFloat(document.getElementById(prefix+'-M').value);
+    const G = parseFloat(document.getElementById(prefix+'-G').value);
+    const GG = parseFloat(document.getElementById(prefix+'-GG').value);
+    if(isNaN(M) || isNaN(G) || isNaN(GG)) return null;
+    return { M, G, GG };
+  } else {
+    const v = parseFloat(document.getElementById(prefix+'-unico').value);
+    if(isNaN(v)) return null;
+    return { unico: v };
+  }
+}
+
+async function uploadImageIfNeeded(){
+  const file = document.getElementById('f-image-file').files[0];
+  if(!file) return document.getElementById('f-image-url').value || null;
+
+  const ext = file.name.split('.').pop();
+  const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const { data, error } = await supabase.storage.from('product-photos').upload(path, file, { upsert: false });
+  if(error) throw new Error('Erro ao enviar foto: ' + error.message);
+  const { data: urlData } = supabase.storage.from('product-photos').getPublicUrl(data.path);
+  return urlData.publicUrl;
+}
+
+async function saveProduct(){
+  const errEl = document.getElementById('modal-error');
+  errEl.style.display = 'none';
+
+  const category = document.getElementById('f-category').value;
+  const name = document.getElementById('f-name').value.trim();
+  const description = document.getElementById('f-description').value.trim() || null;
+  const prices = collectPrices('price');
+  const promoActive = document.getElementById('f-promo-active').checked;
+  const promoLabel = document.getElementById('f-promo-label').value.trim() || null;
+  const promoPrices = promoActive ? collectPrices('promo-price') : null;
+  const active = document.getElementById('f-active').checked;
+
+  if(!name){ errEl.textContent = 'Digite o nome do produto.'; errEl.style.display = 'block'; return; }
+  if(!prices){ errEl.textContent = 'Preencha todos os preços.'; errEl.style.display = 'block'; return; }
+  if(promoActive && !promoPrices){ errEl.textContent = 'Preencha os preços promocionais, ou desative a promoção.'; errEl.style.display = 'block'; return; }
+
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Salvando...';
+
+  try{
+    const image_url = await uploadImageIfNeeded();
+    const payload = { category, name, description, prices, promo_active: promoActive, promo_prices: promoPrices, promo_label: promoLabel, active, image_url };
+
+    let error;
+    if(editingId){
+      ({ error } = await supabase.from('products').update(payload).eq('id', editingId));
+    } else {
+      const sameCategory = allProducts.filter(p => p.category === category);
+      payload.sort_order = sameCategory.length;
+      ({ error } = await supabase.from('products').insert(payload));
+    }
+    if(error) throw new Error(error.message);
+
+    closeProductModal();
+    currentTab = category;
+    renderTabs();
+    await loadProducts();
+  } catch(e){
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Salvar';
+  }
+}
+
+async function deleteProduct(){
+  if(!editingId) return;
+  if(!confirm('Tem certeza que quer excluir este produto? Essa ação não pode ser desfeita.')) return;
+  const { error } = await supabase.from('products').delete().eq('id', editingId);
+  if(error){ alert('Erro ao excluir: ' + error.message); return; }
+  closeProductModal();
+  await loadProducts();
+}
+
+/* ==================== START ==================== */
+checkSession();
+</script>
+</body>
+</html>
